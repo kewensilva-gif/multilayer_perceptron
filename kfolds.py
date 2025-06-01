@@ -9,16 +9,16 @@ from mlp import MLP # Importa sua classe MLP
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu' 
 
-# --- 1. Definir as Transformações para as Imagens (CONSISTENTE COM training_mlp.py) ---
+# --- 1. Definir as Transformações para as Imagens
 data_transforms = transforms.Compose([
     transforms.Grayscale(num_output_channels=1), #ESCALA DE CINZA
     transforms.Resize((64, 64)), 
     transforms.ToTensor(),       
-    transforms.Normalize((0.5,), (0.5,)) # <--- NORMALIZAÇÃO PARA ESCALA DE CINZA (consistente com training_mlp.py, mesmo que lá esteja comentado, é boa prática aplicar)
+    transforms.Normalize((0.5,), (0.5,))
 ])
 
 # --- 2. Carregar o Dataset Completo Usando ImageFolder ---
-dataset_path = 'dataset-train' # Usar o dataset de treino para o K-Fold
+dataset_path = 'dataset-train'
 full_dataset = datasets.ImageFolder(
     root=dataset_path,
     transform=data_transforms
@@ -38,12 +38,12 @@ kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
 all_fold_accuracies = []
 all_fold_losses = []
 
-# Parâmetros do modelo e treinamento - Ajustados para consistência com training_mlp.py
+# Parâmetros do modelo e treinamento
 input_size_grayscale = 64 * 64 * 1 
 output_size = len(class_to_idx)
 learning_rate = 0.001
 num_epochs = 50 # Número de épocas por fold (pode precisar de mais)
-batch_size = 8 # <--- MUDANÇA: Batch size CONSISTENTE COM training_mlp.py
+batch_size = 8
 
 print(f"Iniciando validação cruzada com {num_folds} folds...")
 
@@ -61,8 +61,7 @@ for fold, (train_index, val_index) in enumerate(kf.split(full_dataset)):
 
     # Inicializar o modelo, função de perda e otimizador para cada fold
     # Isso garante que o modelo comece "do zero" para cada fold
-    # MUDANÇA AQUI: A MLP agora só recebe output_size (num_classes) como no training_mlp.py
-    model = MLP(output_size).to(device) # <--- MUDANÇA AQUI: APENAS output_size
+    model = MLP(output_size).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -72,8 +71,6 @@ for fold, (train_index, val_index) in enumerate(kf.split(full_dataset)):
         current_loss = 0.0
         for batch_idx, (images, labels) in enumerate(train_loader):
             images, labels = images.to(device), labels.to(device) # Mova para o dispositivo
-            # images = images.view(images.size(0), -1) # <--- Achata a imagem (consistente com a MLP não tendo Flatten)
-
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels)
