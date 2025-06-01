@@ -25,36 +25,39 @@ model = MLP(num_classes).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# Treinamento
-def training(num_epochs=1):
-    for epoch in range(num_epochs):
+def training():
+    epoch = 1
+    while True:
         model.train()
-        running_loss = 0.0
+        cumulative_batch_error = 0.0
         correct = 0
         total = 0
 
         for images, labels in train_loader:
             images, labels = images.to(device), labels.to(device)
-            print(f"Labels: {labels}")
+            # print(f"Labels: {labels}")
             optimizer.zero_grad()
             outputs = model(images)
-            print(f"\n\nOutputs: {outputs}")
-            loss = criterion(outputs, labels)
-            print(f"\n\nLoss outputs: {loss}")
-            loss.backward()
+            # print(f"\n\nOutputs: {outputs}")
+            error = criterion(outputs, labels)
+            # print(f"\n\nLoss outputs: {loss}")
+            error.backward()
             optimizer.step()
 
-            running_loss += loss.item()
-            
+            cumulative_batch_error += error.item()
+            [0.9, 0.0, 0.1]
             # Cálculo da acurácia
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-        epoch_loss = running_loss / len(train_loader)
-        epoch_acc = 100 * correct / total
+        epoch_error = cumulative_batch_error / len(train_loader)
+        epoch_accuracy = 100 * correct / total
 
-        print(f"Época {epoch+1}/{num_epochs} | Loss: {epoch_loss:.4f} | Acurácia: {epoch_acc:.2f}%")
+        print(f"Época {epoch+1} | Loss: {epoch_error:.4f} | Acurácia: {epoch_accuracy:.2f}%")
+
+        if(epoch_error <= 0.3): break
+        epoch+=1
 
 if __name__ == '__main__':
     training()
