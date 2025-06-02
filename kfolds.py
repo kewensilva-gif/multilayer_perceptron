@@ -11,14 +11,14 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # --- 1. Definir as Transformações para as Imagens
 data_transforms = transforms.Compose([
-    transforms.Grayscale(num_output_channels=1), #ESCALA DE CINZA
+    transforms.Grayscale(num_output_channels=1), 
     transforms.Resize((64, 64)), 
     transforms.ToTensor(),       
     transforms.Normalize((0.5,), (0.5,))
 ])
 
 # --- 2. Carregar o Dataset Completo Usando ImageFolder ---
-dataset_path = 'dataset-train'
+dataset_path = 'dataset-test'
 full_dataset = datasets.ImageFolder(
     root=dataset_path,
     transform=data_transforms
@@ -42,7 +42,7 @@ all_fold_losses = []
 input_size_grayscale = 64 * 64 * 1 
 output_size = len(class_to_idx)
 learning_rate = 0.001
-num_epochs = 50 # Número de épocas por fold (pode precisar de mais)
+num_epochs = 30 # Número de épocas por fold
 batch_size = 8
 
 print(f"Iniciando validação cruzada com {num_folds} folds...")
@@ -51,26 +51,18 @@ print(f"Iniciando validação cruzada com {num_folds} folds...")
 for fold, (train_index, val_index) in enumerate(kf.split(full_dataset)):
     print(f"\n--- Fold {fold+1}/{num_folds} ---")
 
-    # Cria subconjuntos (Subsets) do dataset completo para cada fold
-    train_subset = Subset(full_dataset, train_index)
-    val_subset = Subset(full_dataset, val_index)
-
-    # Cria DataLoaders para o fold atual a partir dos Subsets
-    train_loader = DataLoader(dataset=train_subset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(dataset=val_subset, batch_size=batch_size, shuffle=False)
 
     # Inicializar o modelo, função de perda e otimizador para cada fold
     # Isso garante que o modelo comece "do zero" para cada fold
     model = MLP(output_size).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
     # Loop de Treinamento para o Fold Atual
     model.train()
-    for epoch in range(num_epochs): # <--- num_epochs fixo para o K-Fold
+    for epoch in range(num_epochs):
         current_loss = 0.0
         for batch_idx, (images, labels) in enumerate(train_loader):
-            images, labels = images.to(device), labels.to(device) # Mova para o dispositivo
+            images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels)
