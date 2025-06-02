@@ -49,8 +49,18 @@ print(f"Iniciando validação cruzada com {num_folds} folds...")
 
 # --- 5. Loop de Treinamento e Avaliação para cada Fold ---
 for fold, (train_index, val_index) in enumerate(kf.split(full_dataset)):
+    print(f"index:{val_index}, train{train_index}")
     print(f"\n--- Fold {fold+1}/{num_folds} ---")
 
+    # Cria subconjuntos (Subsets) do dataset completo para cada fold
+    train_subset = Subset(full_dataset, train_index)
+    val_subset = Subset(full_dataset, val_index)
+    print(f"  Tamanho do conjunto de treinamento: {len(train_subset)}")
+    print(f"  Tamanho do conjunto de validação: {len(val_subset)}")
+
+    # Cria DataLoaders para o fold atual a partir dos Subsets
+    train_loader = DataLoader(dataset=train_subset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(dataset=val_subset, batch_size=batch_size, shuffle=False)
 
     # Inicializar o modelo, função de perda e otimizador para cada fold
     # Isso garante que o modelo comece "do zero" para cada fold
@@ -83,7 +93,6 @@ for fold, (train_index, val_index) in enumerate(kf.split(full_dataset)):
     with torch.no_grad():
         for images, labels in val_loader:
             images, labels = images.to(device), labels.to(device)
-            images = images.view(images.size(0), -1) # Achata as imagens para a MLP
 
             outputs = model(images)
             loss = criterion(outputs, labels)
