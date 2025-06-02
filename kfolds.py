@@ -14,11 +14,11 @@ data_transforms = transforms.Compose([
     transforms.Grayscale(num_output_channels=1), 
     transforms.Resize((64, 64)), 
     transforms.ToTensor(),       
-    transforms.Normalize((0.5,), (0.5,))
+    # transforms.Normalize((0.5,), (0.5,)) # Apenas para imagens colordas
 ])
 
 # --- 2. Carregar o Dataset Completo Usando ImageFolder ---
-dataset_path = 'dataset-test'
+dataset_path = 'dataset-train'
 full_dataset = datasets.ImageFolder(
     root=dataset_path,
     transform=data_transforms
@@ -42,7 +42,7 @@ all_fold_losses = []
 input_size_grayscale = 64 * 64 * 1 
 output_size = len(class_to_idx)
 learning_rate = 0.001
-num_epochs = 30 # Número de épocas por fold
+num_epochs = 20 # Número de épocas por fold
 batch_size = 8
 
 print(f"Iniciando validação cruzada com {num_folds} folds...")
