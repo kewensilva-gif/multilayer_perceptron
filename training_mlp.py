@@ -58,7 +58,7 @@ def training(min_error=0.3):
 
         print(f"Época {epoch+1} | Loss: {epoch_error:.4f} | Acurácia: {epoch_accuracy:.2f}%")
 
-        if epoch_error <= min_error or epoch >= max_epochs -1 :
+        if epoch_error <= min_error or epoch >= max_epochs -1:
             if epoch_error <= min_error:
                 print(f"Critério de erro baixo ({epoch_error:.4f} <= {min_error}) atingido.")
             if epoch >= max_epochs -1:
@@ -81,7 +81,6 @@ def evaluate_model(model, loader, device, class_names_list):
     all_labels = []
     all_preds = []
 
-    # Desabilita o calculo de gradientes
     with torch.no_grad():
         for images, labels in loader:
             images, labels = images.to(device), labels.to(device)
@@ -97,8 +96,8 @@ def evaluate_model(model, loader, device, class_names_list):
     # print("preds",all_preds_clean)
 
     cm = confusion_matrix(all_labels, all_preds)
-    # print("\nMatriz de Confusão:")
-    # print(cm)
+    print("\nMatriz de Confusão:")
+    print(cm)
     plot_confusion_matrix(cm, class_names_list)
 
     return cm
