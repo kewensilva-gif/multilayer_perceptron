@@ -3,6 +3,11 @@
 Este projeto implementa uma rede neural do tipo **Perceptron Multicamadas (MLP)** utilizando **PyTorch**, com foco em classificação de imagens e detecção de alvos nelas.
 
 
+
+## 🚀 Configurando o Ambiente Virtual
+
+Siga os passos abaixo para configurar e rodar o projeto corretamente:
+
 ### 1️⃣ Criar um ambiente virtual
 
 No terminal ou prompt de comando, execute:
