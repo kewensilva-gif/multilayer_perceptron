@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+from PIL import Image
 
 from torch.utils.data import DataLoader
 from mlp import MLP
@@ -22,6 +23,94 @@ transform = transforms.Compose([
     transforms.ToTensor(),
     # transforms.Normalize((0.5,), (0.5,))
 ])
+
+def predict_image(model_path, image_path, class_names, device):
+    """
+    Função para fazer predição em uma imagem individual
+    
+    Args:
+        model_path (str): Caminho para o modelo salvo (.pth)
+        image_path (str): Caminho para a imagem a ser classificada
+        class_names (list): Lista com os nomes das classes
+        device (str): Dispositivo (cuda/cpu)
+    
+    Returns:
+        tuple: (classe_predita, confiança, probabilidades_todas_classes)
+    """
+    
+    # Verificar se o arquivo do modelo existe
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Modelo não encontrado em: {model_path}")
+    
+    # Verificar se a imagem existe
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Imagem não encontrada em: {image_path}")
+    
+    try:
+        # Carregar e preprocessar a imagem
+        image = Image.open(image_path)
+        
+        # Aplicar as mesmas transformações usadas no treinamento
+        image_tensor = transform(image).unsqueeze(0).to(device)  # Adicionar dimensão batch
+        
+        # Carregar o modelo
+        num_classes = len(class_names)
+        model = MLP(num_classes).to(device)
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        model.eval()
+        
+        # Fazer predição
+        with torch.no_grad():
+            outputs = model(image_tensor)
+            probabilities = torch.softmax(outputs, dim=1)
+            confidence, predicted = torch.max(probabilities, 1)
+            
+            predicted_class = class_names[predicted.item()]
+            confidence_score = confidence.item()
+            all_probabilities = probabilities.cpu().numpy()[0]
+        
+        return predicted_class, confidence_score, all_probabilities
+        
+    except Exception as e:
+        raise RuntimeError(f"Erro ao processar a imagem: {str(e)}")
+
+def show_prediction_results(image_path, predicted_class, confidence, all_probabilities, class_names):
+    """
+    Função para exibir os resultados da predição de forma visual
+    
+    Args:
+        image_path (str): Caminho da imagem
+        predicted_class (str): Classe predita
+        confidence (float): Confiança da predição
+        all_probabilities (numpy.array): Probabilidades de todas as classes
+        class_names (list): Lista com nomes das classes
+    """
+    
+    # Criar figura com subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+    
+    # Mostrar a imagem original
+    image = Image.open(image_path)
+    ax1.imshow(image, cmap='gray' if image.mode == 'L' else None)
+    ax1.set_title(f'Imagem Original\nPredição: {predicted_class}\nConfiança: {confidence:.2%}')
+    ax1.axis('off')
+    
+    # Mostrar probabilidades de todas as classes
+    colors = ['red' if class_name == predicted_class else 'blue' for class_name in class_names]
+    bars = ax2.bar(class_names, all_probabilities, color=colors, alpha=0.7)
+    ax2.set_title('Probabilidades por Classe')
+    ax2.set_ylabel('Probabilidade')
+    ax2.set_xlabel('Classes')
+    ax2.tick_params(axis='x', rotation=45)
+    
+    # Adicionar valores nas barras
+    for bar, prob in zip(bars, all_probabilities):
+        height = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+                f'{prob:.3f}', ha='center', va='bottom')
+    
+    plt.tight_layout()
+    plt.show()
 
 def training(model, criterion, optimizer, train_loader, min_error=0.03, max_epochs=300):
     epoch = 0
@@ -151,6 +240,7 @@ def main():
         print("1. Treinamento com K-Folds")
         print("2. Treinamento Final com Todos os Dados")
         print("3. Teste de taxa de aprendizado")
+        print("4. Predição em imagem individual")
         print("0. Sair")
 
         opcao = int(input("Selecione uma opção: "))
@@ -180,6 +270,7 @@ def main():
 
             training(model, criterion, optimizer, train_loader)
             torch.save(model.state_dict(), "modelo_mlp.pth")
+            print("\nModelo salvo como 'modelo_mlp.pth'")
 
         elif opcao == 3:
             learning_rate_list = [0.1, 0.01, 0.001]
@@ -220,6 +311,36 @@ def main():
                 mean_epochs = result['mean_epochs']
                 print(f"{lr:<20} | {mean_acc:<20} | {std_acc:<20} | {mean_epochs:<20}")
 
+        elif opcao == 4:
+            model_path = "modelo_interacao.pth"
+            
+            # image_path = "recortes_binarios_image7/objeto_1_01.png"
+            image_path = "dataset-test/5_interacao/inter_ventilador_69.png"
+            # image_path = "dataset-test/4_tv/tv_CHoPRV.png"
+            # image_path = "dataset-test/3_helice/helice_dIDvlT.png"
+            # image_path = "dataset-test/1_colcheias/colcheias_1mo8g1.png"
+            # image_path = "dataset-test/0_lampada/balao_G9SSUz.png"
+            
+            try:
+                predicted_class, confidence, all_probabilities = predict_image(
+                    model_path, image_path, class_names, device
+                )
+                
+                print(f"\n===== RESULTADO DA PREDIÇÃO =====")
+                print(f"Classe predita: {predicted_class}")
+                print(f"Classe verdadeira: {image_path.split('/')[-2]}")
+                print(f"Confiança: {confidence:.2%}")
+                print(f"\nProbabilidades de todas as classes:")
+                for i, (class_name, prob) in enumerate(zip(class_names, all_probabilities)):
+                    print(f"  {class_name}: {prob:.4f} ({prob*100:.2f}%)")
+                
+                # Perguntar se deseja mostrar visualização
+                show_viz = input("\nDeseja visualizar os resultados? (s/n): ").strip().lower()
+                if show_viz == 's':
+                    show_prediction_results(image_path, predicted_class, confidence, all_probabilities, class_names)
+                    
+            except Exception as e:
+                print(f"Erro na predição: {str(e)}")
 
         elif opcao == 0:
             print("Encerrando o programa.")
