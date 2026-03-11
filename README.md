@@ -1,22 +1,97 @@
-# Multilayer Perceptron (MLP)
+# ShapeNet MLP — Classificação de Imagens com Perceptron Multicamadas
 
-Este projeto implementa uma rede neural do tipo **Perceptron Multicamadas (MLP)** utilizando **PyTorch**, com foco em classificação de imagens e detecção de alvos nelas.
+> Rede neural MLP em PyTorch para classificação de imagens 64x64 em 5 classes de formas/objetos, com validação cruzada K-Fold e busca de learning rate.
 
+[![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.7-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+---
 
-## 🚀 Configurando o Ambiente Virtual
+## Sumário
 
-Siga os passos abaixo para configurar e rodar o projeto corretamente:
+- [Sobre o Projeto](#sobre-o-projeto)
+- [Classes do Dataset](#classes-do-dataset)
+- [Arquitetura da Rede](#arquitetura-da-rede)
+- [Funcionalidades](#funcionalidades)
+- [Instalação](#instalação)
+- [Uso](#uso)
+- [Estrutura de Pastas](#estrutura-de-pastas)
+- [Resultados](#resultados)
 
-### 1️⃣ Criar um ambiente virtual
+---
 
-No terminal ou prompt de comando, execute:
+## Sobre o Projeto
+
+**ShapeNet MLP** (nome sugerido para substituir "multilayer_perceptron") implementa uma rede neural do tipo **Perceptron Multicamadas (MLP)** para classificar imagens em escala de cinza (64×64 pixels) em **5 categorias** de formas simples. O projeto inclui treinamento com validação cruzada K-Fold, comparação de taxas de aprendizado e pipeline de inferência com binarização.
+
+---
+
+## Classes do Dataset
+
+| Classe | Label | Exemplos |
+|---|---|---|
+| 0 | Lâmpada | 21 treino / 10 teste |
+| 1 | Colcheias (notas musicais) | 21 treino / 10 teste |
+| 2 | Floco de neve | 21 treino / 10 teste |
+| 3 | Hélice | 21 treino / 10 teste |
+| 4 | TV | 21 treino / 10 teste |
+
+**Total:** 105 imagens de treino + 50 imagens de teste
+
+---
+
+## Arquitetura da Rede
+
+```
+Input (64×64 = 4096) → Flatten → Linear(4096, 256) → ReLU → Linear(256, 5) → Output
+```
+
+| Camada | Entrada | Saída |
+|---|---|---|
+| Flatten | 64×64 | 4096 |
+| Linear + ReLU | 4096 | 256 |
+| Linear (output) | 256 | 5 |
+
+> O arquivo `mlp.py` contém 5 variações de arquitetura comentadas (64 a 256 neurônios, 1 a 2 camadas ocultas).
+
+---
+
+## Funcionalidades
+
+| Script | Funcionalidade |
+|---|---|
+| `mlp.py` | Definição da arquitetura MLP (`nn.Module`) |
+| `training_mlp.py` | Treinamento com menu interativo (K-Fold, treino final, comparação de LR) |
+| `test.py` | Inferência em imagens de teste + binarização + exportação |
+
+### Menu de Treinamento (`training_mlp.py`)
+
+1. **K-Fold Cross-Validation** (k=5) — salva matriz de confusão por fold
+2. **Treinamento final** — treina em todos os dados, salva pesos em `modelo_mlp.pth`
+3. **Comparação de Learning Rate** — testa 0.1, 0.01, 0.001 com K-Fold
+
+### Parâmetros de Treinamento
+
+| Parâmetro | Valor |
+|---|---|
+| Otimizador | Adam |
+| Loss | CrossEntropyLoss |
+| Critério de parada | Erro ≤ 0.03 com 100% accuracy **ou** 300 épocas |
+| K-Fold | k = 5 |
+| Learning rates testadas | 0.1, 0.01, 0.001 |
+
+---
+
+## Instalação
+
+### 1. Criar ambiente virtual
 
 ```sh
 python -m venv venv
 ```
 
-### 2️⃣ Ativar o ambiente virtual
+### 2. Ativar o ambiente virtual
 
 - **Windows (CMD)**:
   ```sh
@@ -31,34 +106,78 @@ python -m venv venv
   source venv/bin/activate
   ```
 
-### 3️⃣ Instalar dependências
-
-Com o ambiente virtual ativado, instale as dependências do projeto executando:
+### 3. Instalar dependências
 
 ```sh
 pip install -r requirements.txt
 ```
 
-### 4️⃣ Executar o projeto
+---
 
-Se o projeto possui um script principal (por exemplo, `training_mlp.py`, `train.py` ou `main.py`), execute:
+## Uso
+
+### Treinar o modelo
 
 ```sh
 python training_mlp.py
 ```
 
+O menu interativo será exibido com as opções de treinamento.
 
-## 📁 Estrutura
+### Executar inferência
 
-```
-multilayer_perceptron/
-├── mlp.py              # Arquitetura da rede MLP
-├── training_mlp.py     # Treinamento do modelo
-├── test.py             # Avaliação do modelo treinado
-├── modelo_mlp.pth      # Pesos salvos da MLP treinada
+```sh
+python test.py
 ```
 
+Classifica as imagens em `dataset-test/` e exporta versões binarizadas para `dataset-binario/`.
 
-## 📝 Licença
+
+## Estrutura de Pastas
+
+```
+ShapeNet-MLP/
+├── mlp.py                # Arquitetura da rede MLP (nn.Module)
+├── training_mlp.py       # Treinamento com K-Fold, LR search, menu interativo
+├── test.py               # Inferência + binarização de imagens
+├── modelo_mlp.pth        # Pesos salvos da MLP treinada
+├── requirements.txt      # Dependências Python
+├── dataset-train/        # 105 imagens de treino (5 classes × ~21)
+│   ├── 0_lampada/
+│   ├── 1_colcheias/
+│   ├── 2_floco/
+│   ├── 3_helice/
+│   └── 4_tv/
+├── dataset-test/         # 50 imagens de teste
+├── dataset-binario/      # Saída binarizada do test.py
+└── kfold-results/        # Matrizes de confusão por fold e por LR
+    ├── 1.png ... 5.png
+    ├── lr-0/
+    ├── lr-1/
+    └── lr-2/
+```
+
+---
+
+## Resultados
+
+Os resultados do K-Fold e comparação de learning rates são salvos como imagens de matrizes de confusão na pasta `kfold-results/`.
+
+---
+
+## Tecnologias
+
+| Biblioteca | Uso |
+|---|---|
+| **PyTorch** | Framework de deep learning |
+| **torchvision** | Transforms e carregamento de datasets |
+| **NumPy / SciPy** | Computação numérica |
+| **scikit-learn** | Métricas (K-Fold, confusion matrix) |
+| **Matplotlib / Seaborn** | Visualização de resultados |
+| **Pillow** | Processamento de imagens |
+
+---
+
+## Licença
 
 Este projeto está sob a licença MIT.
